@@ -128,25 +128,25 @@ object section3 {
   }
 
   object exercise11 {
-    case class State[S,+A](run: S => (A,S))
+    case class State[S,+A](run: S => (A,S)) {
+      def flatMap[B](f: A => State[S,B]): State[S,B] =
+        State(s1 => {
+          val (a, s2) = run(s1)
+          f(a).run(s2)
+        })
+
+      def map[B](f: A => B): State[S,B] =
+        flatMap(a => State(s => (f(a), s)))
+
+    }
 
     trait States {
       def unit[S,A](a: A): State[S,A] =
         State(s => (a, s))
 
-      def flatMap[S,A,B](s: State[S,A])(f: A => State[S,B]): State[S,B] =
-        State(s1 => {
-          val (a, s2) = s.run(s1)
-          f(a).run(s2)
-        })
-
-
-      def map[S,A,B](s: State[S,A])(f: A => B): State[S,B] =
-        flatMap(s)(a => State(s => (f(a), s)))
-
       def map2[S,A,B,C](sa: State[S,A], sb: State[S,B])(f: (A, B) => C): State[S,C] =
-        flatMap(sa) {a =>
-          flatMap(sb) {b =>
+        sa.flatMap {a =>
+          sb.flatMap {b =>
             State(s => (f(a, b), s))
           }
         }
